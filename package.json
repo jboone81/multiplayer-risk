@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Multiplayer Risk — Phase 3 Chunk A (server scaffolding + lobby).",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev":   "node --watch server.js"
