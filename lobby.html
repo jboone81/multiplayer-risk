@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RISK — Lobby</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="lobby.css" />
+</head>
+<body>
+
+  <header class="lobby-header">
+    <div class="lobby-brand">
+      <h1 class="brand-logo">⚔&nbsp;RISK</h1>
+      <span class="brand-tagline">Multiplayer Lobby</span>
+    </div>
+    <div class="lobby-conn" id="conn-indicator" title="Server connection status">
+      <span class="conn-dot"></span>
+      <span class="conn-label">Connecting…</span>
+    </div>
+  </header>
+
+
+  <!-- ══ VIEW 1: Name + Create/Join form (before joining a room) ══ -->
+  <section class="lobby-view" id="view-entry">
+    <div class="entry-card">
+      <h2 class="entry-title">Enter the war room</h2>
+      <p class="entry-hint">Pick a name, then create a new game or join one with a room code.</p>
+
+      <div class="field">
+        <label for="entry-name">Your name</label>
+        <input type="text" id="entry-name" maxlength="24" autocomplete="off" placeholder="e.g. General Sherman" />
+      </div>
+
+      <div class="entry-actions">
+        <button type="button" id="btn-create" class="btn btn-primary" disabled>Create Game</button>
+        <div class="entry-or">or</div>
+        <div class="entry-join">
+          <input type="text" id="entry-code" maxlength="5" autocomplete="off" placeholder="ROOM" />
+          <button type="button" id="btn-join" class="btn btn-secondary" disabled>Join</button>
+        </div>
+      </div>
+
+      <p class="entry-error" id="entry-error"></p>
+    </div>
+  </section>
+
+
+  <!-- ══ VIEW 2: In-room lobby (after joining) ══ -->
+  <section class="lobby-view hidden" id="view-room">
+    <div class="room-layout">
+
+      <div class="room-players-panel">
+        <div class="room-header">
+          <div class="room-code-block">
+            <div class="room-code-label">ROOM CODE</div>
+            <div class="room-code" id="room-code">—</div>
+            <button type="button" id="btn-copy-code" class="btn btn-ghost btn-small">Copy</button>
+          </div>
+          <button type="button" id="btn-leave" class="btn btn-ghost btn-small">Leave</button>
+        </div>
+
+        <h2 class="panel-heading">Players <span id="player-count">(0/6)</span></h2>
+        <div id="player-list" class="player-list"></div>
+
+        <div class="room-actions">
+          <button type="button" id="btn-ready" class="btn btn-secondary">Ready ✓</button>
+          <button type="button" id="btn-start" class="btn btn-primary hidden" disabled>Start Game</button>
+        </div>
+        <p class="start-hint" id="start-hint"></p>
+      </div>
+
+      <div class="room-settings-panel">
+        <h2 class="panel-heading">Continent Bonuses <span id="settings-hint"></span></h2>
+        <div id="continent-settings" class="continent-settings"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="lobby.js"></script>
+</body>
+</html>

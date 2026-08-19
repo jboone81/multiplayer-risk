@@ -1,0 +1,14 @@
+{
+  "name": "risk-multiplayer",
+  "version": "0.1.0",
+  "description": "Multiplayer Risk — Phase 3 Chunk A (server scaffolding + lobby).",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev":   "node --watch server.js"
+  },
+  "dependencies": {
+    "express":   "^4.21.0",
+    "socket.io": "^4.7.5"
+  }
+}

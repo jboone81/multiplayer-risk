@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RISK — World Domination</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="game-header" role="banner">
+    <div class="header-brand">
+      <h1 class="brand-logo">⚔&nbsp;RISK</h1>
+      <span class="brand-tagline">World Domination</span>
+    </div>
+
+    <nav class="header-status" role="status" aria-live="polite">
+      <div class="status-chip"><span class="status-label">ROUND</span><span class="status-value" id="round-display">—</span></div>
+      <div class="status-divider"></div>
+      <div class="status-chip"><span class="status-label">PHASE</span><span class="status-value" id="phase-display">—</span></div>
+      <div class="status-divider"></div>
+      <div class="status-chip"><span class="status-label">CURRENT TURN</span><span class="status-value" id="turn-display">—</span></div>
+    </nav>
+
+    <div class="header-actions">
+      <button type="button" id="btn-debug-autosetup" class="btn btn-ghost hidden" title="Debug: instantly place every player's starting armies on random owned territories">Auto-Place (Debug)</button>
+      <button type="button" id="btn-debug-simulate" class="btn btn-ghost hidden" title="Debug: auto-play the rest of the game to a finish">Simulate Game (Debug)</button>
+      <label id="debug-always-win-label" class="debug-toggle hidden" title="Debug: rigs combat so Player 2 always rolls 6s and always wins">
+        <input type="checkbox" id="debug-always-win-p2" />
+        <span id="debug-always-win-text">Always-Win P2 (Debug)</span>
+      </label>
+      <button type="button" id="btn-skip-fortify" class="btn btn-ghost hidden">Skip Fortify</button>
+      <button type="button" id="btn-end-phase" class="btn btn-primary" disabled>End Phase</button>
+      <button type="button" id="btn-new-game" class="btn btn-ghost">New Game</button>
+    </div>
+  </header>
+
+
+  <div class="game-layout">
+    <aside class="sidebar sidebar-left" aria-label="Players and continents">
+      <section class="panel">
+        <h2 class="panel-heading">Players</h2>
+        <div id="player-list" class="player-list" role="list"></div>
+      </section>
+      <section class="panel">
+        <h2 class="panel-heading">Continents</h2>
+        <div id="continent-list" class="continent-list"></div>
+      </section>
+    </aside>
+
+    <main class="map-area" aria-label="Game board">
+      <div id="phase-banner" class="phase-banner hidden" aria-live="polite">
+        <span class="banner-label" id="phase-banner-label">—</span>
+        <span class="banner-detail" id="phase-banner-detail">—</span>
+      </div>
+
+      <svg id="game-map" viewBox="0 0 800 533" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Risk world map">
+        <title>Risk World Map</title>
+      </svg>
+
+      <div class="map-hint" aria-hidden="true">
+        <kbd>D</kbd> debug &nbsp;·&nbsp; drag to tune &nbsp;·&nbsp; <kbd>X</kbd> dump coords
+      </div>
+    </main>
+
+    <aside class="sidebar sidebar-right" aria-label="Game log and cards">
+      <section class="panel panel-log">
+        <h2 class="panel-heading">Game Log</h2>
+        <div id="game-log" class="game-log" role="log" aria-live="polite"></div>
+      </section>
+      <section class="panel panel-cards">
+        <h2 class="panel-heading">Cards</h2>
+        <button type="button" id="btn-show-cards" class="btn btn-secondary btn-full">
+          <span id="cards-summary">View hand (0)</span>
+        </button>
+        <p id="cards-forced-notice" class="forced-notice hidden">
+          You must trade in a set before placing armies.
+        </p>
+      </section>
+    </aside>
+  </div>
+
+
+  <!-- Card modal -->
+  <div id="card-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel">
+      <header class="modal-header">
+        <h3 class="modal-title" id="card-modal-title">Your Cards</h3>
+        <button type="button" class="modal-close" data-close aria-label="Close">×</button>
+      </header>
+      <div class="modal-body">
+        <p class="modal-hint" id="card-modal-hint">
+          Select 3 cards to trade in for armies. Valid sets: 3 of the same type, 1 of each type,
+          or any set containing a wildcard.
+        </p>
+        <div id="card-grid" class="card-grid"></div>
+        <div class="trade-preview" id="trade-preview">
+          <div class="trade-preview-status" id="trade-preview-status">Select 3 cards</div>
+          <div class="trade-preview-detail" id="trade-preview-detail"></div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close id="btn-card-cancel">Cancel</button>
+        <button type="button" id="btn-trade-in" class="btn btn-primary" disabled>Trade In</button>
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- Combat modal -->
+  <div id="combat-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel combat-panel">
+      <header class="modal-header">
+        <h3 class="modal-title" id="combat-modal-title">Combat</h3>
+        <button type="button" class="modal-close" id="btn-combat-close" aria-label="Retreat">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="combat-sides">
+          <div class="combat-side combat-attacker">
+            <div class="combat-side-label">ATTACKER</div>
+            <div class="combat-side-name" id="combat-attacker-name">—</div>
+            <div class="combat-side-armies" id="combat-attacker-armies">—</div>
+            <div class="dice-row" id="combat-attacker-dice"></div>
+            <div class="dice-picker" id="combat-attacker-dice-picker">
+              <span class="dice-picker-label">Dice:</span>
+              <button type="button" class="dice-picker-btn" data-dice="1">1</button>
+              <button type="button" class="dice-picker-btn" data-dice="2">2</button>
+              <button type="button" class="dice-picker-btn" data-dice="3">3</button>
+            </div>
+          </div>
+          <div class="combat-vs">VS</div>
+          <div class="combat-side combat-defender">
+            <div class="combat-side-label">DEFENDER</div>
+            <div class="combat-side-name" id="combat-defender-name">—</div>
+            <div class="combat-side-armies" id="combat-defender-armies">—</div>
+            <div class="dice-row" id="combat-defender-dice"></div>
+            <div class="dice-picker-note">Rolls max automatically</div>
+          </div>
+        </div>
+        <div class="combat-result" id="combat-result">Choose dice count, then Roll or Blitz.</div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-ghost" id="btn-combat-retreat">Retreat</button>
+        <button type="button" class="btn btn-secondary" id="btn-combat-roll">Roll</button>
+        <button type="button" class="btn btn-primary" id="btn-combat-blitz">Blitz</button>
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- Move-armies modal -->
+  <div id="move-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <header class="modal-header">
+        <h3 class="modal-title">Move Armies</h3>
+      </header>
+      <div class="modal-body">
+        <p class="modal-hint">Choose how many armies to move into the conquered territory.</p>
+        <div class="move-summary">
+          <div class="move-endpoint">
+            <div class="move-endpoint-label">FROM</div>
+            <div class="move-endpoint-name" id="move-from-name">—</div>
+            <div class="move-endpoint-armies"><span id="move-from-armies">—</span> armies</div>
+          </div>
+          <div class="move-arrow">→</div>
+          <div class="move-endpoint">
+            <div class="move-endpoint-label">TO</div>
+            <div class="move-endpoint-name" id="move-to-name">—</div>
+            <div class="move-endpoint-armies"><span id="move-to-armies">—</span> armies (after move)</div>
+          </div>
+        </div>
+        <div class="move-slider-row">
+          <label for="move-slider" class="move-slider-label">Armies to move:</label>
+          <input type="range" id="move-slider" min="1" max="1" value="1" />
+          <span class="move-slider-value" id="move-slider-value">1</span>
+        </div>
+        <div class="move-range-note" id="move-range-note">Min 1, max 1</div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-move-confirm">Confirm Move</button>
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- Fortify modal -->
+  <div id="fortify-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" id="fortify-backdrop"></div>
+    <div class="modal-panel">
+      <header class="modal-header">
+        <h3 class="modal-title">Fortify</h3>
+        <button type="button" class="modal-close" id="btn-fortify-close" aria-label="Cancel">×</button>
+      </header>
+      <div class="modal-body">
+        <p class="modal-hint">
+          Move armies from your source to a connected friendly territory. This is your one
+          fortify for the turn.
+        </p>
+        <div class="move-summary">
+          <div class="move-endpoint">
+            <div class="move-endpoint-label">FROM</div>
+            <div class="move-endpoint-name" id="fortify-from-name">—</div>
+            <div class="move-endpoint-armies"><span id="fortify-from-armies">—</span> armies (after)</div>
+          </div>
+          <div class="move-arrow">→</div>
+          <div class="move-endpoint">
+            <div class="move-endpoint-label">TO</div>
+            <div class="move-endpoint-name" id="fortify-to-name">—</div>
+            <div class="move-endpoint-armies"><span id="fortify-to-armies">—</span> armies (after)</div>
+          </div>
+        </div>
+        <div class="move-slider-row">
+          <label for="fortify-slider" class="move-slider-label">Armies to move:</label>
+          <input type="range" id="fortify-slider" min="1" max="1" value="1" />
+          <span class="move-slider-value" id="fortify-slider-value">1</span>
+        </div>
+        <div class="move-range-note" id="fortify-range-note">Min 1, max 1 (leave ≥ 1 behind)</div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-ghost" id="btn-fortify-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-fortify-confirm">Confirm & End Turn</button>
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- Game over modal -->
+  <div id="gameover-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel gameover-panel">
+      <header class="modal-header">
+        <h3 class="modal-title">Game Over</h3>
+      </header>
+      <div class="modal-body">
+        <div class="gameover-trophy">🏆</div>
+        <div class="gameover-winner" id="gameover-winner">—</div>
+        <div class="gameover-detail">conquered the world</div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-gameover-new">Start New Game</button>
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="map.js"></script>
+  <script src="cards.js"></script>
+  <script src="state.js"></script>
+  <script src="storage.js"></script>
+  <script src="rules.js"></script>
+  <script src="setup.js"></script>
+  <script src="debug.js"></script>
+  <script src="ui.js"></script>
+  <script src="main.js"></script>
+
+</body>
+</html>
